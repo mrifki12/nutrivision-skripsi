@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NutriVision AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <main class="mobile-container">
+        <!-- Floating Model Selector (Bubble) -->
+        <!-- Mode Produksi: Hanya Menggunakan Model Terbaik (EfficientNetB0) -->
+
+        <!-- Header -->
+        <header class="app-header">
+            <h1 class="logo-text">NutriVision AI</h1>
+            <p class="subtitle">Unggah foto makanan untuk mengetahui perkiraan gizinya.</p>
+        </header>
+
+        <!-- Upload Area -->
+        <div class="upload-section" id="upload-section">
+            <input type="file" id="file-input" accept="image/*" capture="environment" hidden>
+            
+            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                <i data-lucide="camera"></i> Ambil Foto / Galeri
+            </button>
+
+            <!-- Preview Card -->
+            <div class="preview-card" id="drop-zone">
+                <div class="placeholder" id="upload-placeholder">
+                    <p>Pratinjau Gambar</p>
+                </div>
+                <img id="image-preview" class="hidden" src="" alt="Preview">
+                <button class="btn-remove hidden" id="btn-remove-image">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+
+            <button class="btn btn-action hidden" id="btn-predict">
+                Analisis Gambar
+            </button>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay hidden" id="loading-overlay">
+            <div class="spinner"></div>
+            <p>Menganalisis Makanan...</p>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section hidden" id="result-panel">
+            <h2 class="section-title text-center">Hasil Analisis Gambar</h2>
+            
+            <!-- Result Image -->
+            <img id="result-image" src="" alt="Detected Food" class="result-image">
+
+            <!-- Prediction -->
+            <div class="info-card">
+                <p class="label">Prediksi Makanan</p>
+                <h1 id="primary-class" class="food-name">Gado-Gado</h1>
+            </div>
+
+            <!-- Nutrition -->
+            <div class="info-card">
+                <p class="label">Perkiraan Kandungan Gizi</p>
+                <p class="status" id="nutrition-status">Seimbang</p>
+
+                <div class="nutrition-box">
+                    <p class="nutrition-title">Detail Gizi (Berdasarkan TKPI Kemenkes RI)</p>
+                    <p class="nutrition-values" id="nutrition-values">
+                        Kalori: 132.0 kkal | Protein: 4.5g | Lemak: 5.2g | Karbo: 15.1g
+                    </p>
+                </div>
+            </div>
+
+            <!-- Confidence -->
+            <div class="info-card">
+                <p class="label">Kepercayaan Prediksi Makanan</p>
+                <p class="confidence-val" id="primary-confidence">87.62%</p>
+                <p class="confidence-desc">Model yakin sebesar <strong id="confidence-strong">87.62%</strong> bahwa gambar ini adalah <strong id="class-strong">Gado-Gado</strong>.</p>
+                <p class="small-text text-muted mt-2" id="inference-time">Waktu Inferensi: 0.00s</p>
+            </div>
+
+            <!-- Coach AI -->
+            <div class="coach-card">
+                <h3 class="coach-title">Saran Coach AI</h3>
+                
+                <div class="coach-section">
+                    <h4>Komentar Singkat:</h4>
+                    <p id="coach-komentar">Kalori Gado-Gado tergolong rendah, cocok untuk camilan...</p>
+                </div>
+
+                <div class="coach-section">
+                    <h4>Saran Pendamping untuk Gizi Lebih Seimbang:</h4>
+                    
+                    <div class="coach-list">
+                        <h5>1. Sayuran Tinggi Serat:</h5>
+                        <ul id="coach-sayuran">
+                            <li>Kangkung/bayam (rebus) untuk zat besi.</li>
+                        </ul>
+                    </div>
+
+                    <div class="coach-list">
+                        <h5>2. Protein Tambahan:</h5>
+                        <ul id="coach-protein">
+                            <li>Telur rebus/tahu kukus (tanpa digoreng).</li>
+                        </ul>
+                    </div>
+
+                    <div class="coach-list">
+                        <h5>3. Alternatif Penyajian (Tips Sehat):</h5>
+                        <ul id="coach-alternatif">
+                            <li>Kurangi minyak dalam bumbu kacang.</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <p class="coach-footer italic">"Makanan ini sudah oke, tapi bisa lebih powerful dengan tweak kecil ini! Yuk, optimalkan!" 💪</p>
+            </div>
+
+            <button class="btn btn-primary mt-4" id="btn-reset">
+                Coba Gambar Lain
+            </button>
+        </div>
+
+        <!-- Error Modal Popup -->
+        <div class="modal-overlay hidden" id="error-modal">
+            <div class="modal-card">
+                <!-- Custom Food-Themed Icon: Plate with Question Mark -->
+                <div class="modal-icon-wrapper">
+                    <svg class="modal-plate-icon" viewBox="0 0 80 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Plate dome -->
+                        <path d="M10 42 C10 20, 70 20, 70 42" stroke="#00897b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                        <!-- Plate base -->
+                        <ellipse cx="40" cy="44" rx="34" ry="10" stroke="#00897b" stroke-width="2.5" fill="#e0f2f1" opacity="0.5"/>
+                        <!-- Steam lines -->
+                        <path d="M30 16 C30 12, 34 12, 34 16" stroke="#80cbc4" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+                        <path d="M40 10 C40 6, 44 6, 44 10" stroke="#80cbc4" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+                        <path d="M50 16 C50 12, 54 12, 54 16" stroke="#80cbc4" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+                        <!-- Question mark on plate -->
+                        <path d="M36 32 C36 26, 44 26, 44 32 C44 35, 40 35, 40 38" stroke="#00897b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                        <circle cx="40" cy="42" r="1.5" fill="#00897b"/>
+                        <!-- Fork left -->
+                        <line x1="14" y1="58" x2="22" y2="48" stroke="#b0bec5" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="16" y1="52" x2="18" y2="48" stroke="#b0bec5" stroke-width="1.5" stroke-linecap="round"/>
+                        <line x1="19" y1="53" x2="20" y2="49" stroke="#b0bec5" stroke-width="1.5" stroke-linecap="round"/>
+                        <!-- Knife right -->
+                        <line x1="66" y1="58" x2="58" y2="48" stroke="#b0bec5" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+
+                <h2 class="modal-title">Hmm, ini bukan makanan ya?</h2>
+                <p class="modal-message" id="error-modal-message">Coba foto ulang dengan pencahayaan yang lebih baik, atau pastikan objeknya adalah makanan Indonesia.</p>
+
+                <!-- Confidence Gauge -->
+                <div class="modal-gauge hidden" id="error-modal-gauge">
+                    <div class="modal-gauge-header">
+                        <span class="modal-gauge-label">Kemiripan dengan makanan</span>
+                        <span class="modal-gauge-value" id="error-modal-gauge-value">0%</span>
+                    </div>
+                    <div class="modal-gauge-track">
+                        <div class="modal-gauge-fill" id="error-modal-gauge-fill" style="width: 0%"></div>
+                    </div>
+                    <p class="modal-gauge-hint" id="error-modal-gauge-hint">Terlalu rendah untuk diklasifikasikan</p>
+                </div>
+
+                <div class="modal-divider"></div>
+
+                <p class="modal-food-label">Makanan yang bisa dikenali</p>
+                <div class="modal-food-scroll" id="modal-food-scroll">
+                    <div class="modal-food-item"><span class="food-emoji">🍗</span><span class="food-name">Ayam Goreng</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍡</span><span class="food-name">Bakso</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🥗</span><span class="food-name">Gado-Gado</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍟</span><span class="food-name">Kentang Goreng</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🥞</span><span class="food-name">Martabak</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍜</span><span class="food-name">Mie Goreng</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍚</span><span class="food-name">Nasi Goreng</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍛</span><span class="food-name">Nasi Padang</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍌</span><span class="food-name">Pisang Goreng</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🥩</span><span class="food-name">Rendang</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍢</span><span class="food-name">Sate</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🌶️</span><span class="food-name">Seblak</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🥟</span><span class="food-name">Siomay</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🍲</span><span class="food-name">Soto</span></div>
+                    <div class="modal-food-item"><span class="food-emoji">🫘</span><span class="food-name">Tempe Goreng</span></div>
+                </div>
+
+                <button class="btn btn-primary modal-btn" id="btn-close-modal">
+                    <i data-lucide="camera" style="width:18px;height:18px;"></i> Coba Foto Lain
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
